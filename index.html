@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="js">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,9 +45,10 @@
   .overlay a:hover{color:var(--lie);font-style:italic}
   .overlay .foot{position:absolute;bottom:32px;font-family:var(--sans);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--gris)}
 
-  /* fade-up reveal */
-  .rv{opacity:0;transform:translateY(24px);transition:1.4s cubic-bezier(.16,.7,.3,1)}
-  .rv.in{opacity:1;transform:none}
+  /* fade-up reveal (progressive enhancement : caché uniquement si JS actif) */
+  .rv{transition:1.4s cubic-bezier(.16,.7,.3,1)}
+  .js .rv{opacity:0;transform:translateY(24px)}
+  .js .rv.in{opacity:1;transform:none}
   .rv.s2{transition-delay:.35s}.rv.s3{transition-delay:.7s}.rv.s4{transition-delay:1.05s}
 
   section{position:relative;padding:20vh 0;display:flex;align-items:center;justify-content:center;min-height:100vh;scroll-margin-top:88px}
@@ -135,6 +136,7 @@
     .visite .vrow{flex-direction:column;gap:6px}.visite .vrow span{text-align:left}
   }
 </style>
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 
@@ -309,21 +311,41 @@
 </footer>
 
 <script>
-  const bar=document.getElementById('bar');
-  addEventListener('scroll',()=>bar.classList.toggle('solid',scrollY>60));
+  var bar=document.getElementById('bar');
+  window.addEventListener('scroll',function(){bar.classList.toggle('solid',window.scrollY>60);});
   function ov(open){document.getElementById('ov').classList.toggle('open',open);}
-  addEventListener('keydown',e=>{if(e.key==='Escape')ov(false);});
+  window.addEventListener('keydown',function(e){if(e.key==='Escape')ov(false);});
 
-  // reveal
-  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.2});
-  document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+  // reveal au défilement — robuste, avec repli automatique
+  function reveal(){
+    var vh=window.innerHeight||800;
+    var els=document.querySelectorAll('.rv:not(.in)');
+    for(var i=0;i<els.length;i++){
+      if(els[i].getBoundingClientRect().top < vh*0.88) els[i].classList.add('in');
+    }
+  }
+  window.addEventListener('scroll',reveal,{passive:true});
+  window.addEventListener('resize',reveal);
+  window.addEventListener('load',reveal);
+  reveal();
 
   // rotating quotes
-  const qs=[...document.querySelectorAll('.landing .q')];let qi=0;
-  setInterval(()=>{qs[qi].classList.remove('show');qi=(qi+1)%qs.length;qs[qi].classList.add('show');},5200);
+  var qs=document.querySelectorAll('.landing .q');var qi=0;
+  if(qs.length>1){
+    setInterval(function(){qs[qi].classList.remove('show');qi=(qi+1)%qs.length;qs[qi].classList.add('show');},5200);
+  }
 
   // language
   function setLang(l){
     document.documentElement.lang=l;
-    document.querySelectorAll('[data-fr]').forEach(e=>{
-      const t=e.getAttribute('data-'+l
+    var els=document.querySelectorAll('[data-fr]');
+    for(var i=0;i<els.length;i++){
+      var t=els[i].getAttribute('data-'+l);
+      if(t!==null) els[i].innerHTML=t;
+    }
+    document.getElementById('l-fr').classList.toggle('active',l==='fr');
+    document.getElementById('l-en').classList.toggle('active',l==='en');
+  }
+</script>
+</body>
+</html>
